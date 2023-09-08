@@ -8,8 +8,7 @@ import (
 
 // RunningByDoubleClick Check if run directly by double-clicking
 func RunningByDoubleClick() bool {
-	kernel32 := windows.NewLazySystemDLL("kernel32.dll")
-	lp := kernel32.NewProc("GetConsoleProcessList")
+	lp := Kernel32.NewProc("GetConsoleProcessList")
 	if lp != nil {
 		var ids [2]uint32
 		var maxCount uint32 = 2
@@ -25,8 +24,7 @@ func RunningByDoubleClick() bool {
 func MessageBoxW(hwnd uintptr, caption, title string, flags uint) int {
 	captionPtr, _ := windows.UTF16PtrFromString(caption)
 	titlePtr, _ := windows.UTF16PtrFromString(title)
-	u32 := windows.NewLazySystemDLL("user32.dll")
-	ret, _, _ := u32.NewProc("MessageBoxW").Call(
+	ret, _, _ := User32.NewProc("MessageBoxW").Call(
 		hwnd,
 		uintptr(unsafe.Pointer(captionPtr)),
 		uintptr(unsafe.Pointer(titlePtr)),
@@ -36,8 +34,8 @@ func MessageBoxW(hwnd uintptr, caption, title string, flags uint) int {
 }
 
 // GetConsoleWindows retrieves the window handle used by the console associated with the calling process.
-func GetConsoleWindows() (hWnd uintptr) {
-	hWnd, _, _ = windows.NewLazySystemDLL("kernel32.dll").NewProc("GetConsoleWindow").Call()
+func GetConsoleWindows() (hwnd uintptr) {
+	hwnd, _, _ = Kernel32.NewProc("GetConsoleWindow").Call()
 	return
 }
 
@@ -45,12 +43,11 @@ func GetConsoleWindows() (hWnd uintptr) {
 func ToHighDPI() {
 	systemAware := ^uintptr(2) + 1
 	unawareGDIScaled := ^uintptr(5) + 1
-	u32 := windows.NewLazySystemDLL("user32.dll")
-	proc := u32.NewProc("SetThreadDpiAwarenessContext")
+	proc := User32.NewProc("SetThreadDpiAwarenessContext")
 	if proc.Find() != nil {
 		return
 	}
 	for i := unawareGDIScaled; i <= systemAware; i++ {
-		_, _, _ = u32.NewProc("SetThreadDpiAwarenessContext").Call(i)
+		_, _, _ = User32.NewProc("SetThreadDpiAwarenessContext").Call(i)
 	}
 }
