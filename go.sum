@@ -1,0 +1,4 @@
+github.com/Ink-33/logger v0.0.0-20221222170202-dd29ae3ac405 h1:IrXUMF2mZcRy20/9SU9oIp45ro5EQ3k6DUdEDqy39Oo=
+github.com/Ink-33/logger v0.0.0-20221222170202-dd29ae3ac405/go.mod h1:FFGAtSs4rAiFYzI6+kVs3p782160vEA+pY2xYhQuWgc=
+golang.org/x/sys v0.12.0 h1:CM0HF96J0hcLAwsHPJZjfdNzs0gftsLfgKt57wWHJ0o=
+golang.org/x/sys v0.12.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
