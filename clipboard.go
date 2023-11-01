@@ -1,7 +1,6 @@
 package win32utils
 
 import (
-	"fmt"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -39,7 +38,8 @@ func SetClipboardText(text string) (handle windows.Handle, err error) {
 		return 0, err
 	}
 
-	h, err := GlobalAlloc(uint(GMEM_MOVEABLE), uint(len(u16text))*uint(unsafe.Sizeof(u16text[0])))
+	h, err := GlobalAlloc(uint(GMEM_MOVEABLE),
+		uint(len(u16text))*uint(unsafe.Sizeof(u16text[0])))
 	if err != nil {
 		return 0, err
 	}
@@ -48,8 +48,10 @@ func SetClipboardText(text string) (handle windows.Handle, err error) {
 	if err != nil {
 		return 0, err
 	}
-	gtext := unsafe.Slice((*uint16)(unsafe.Pointer(p)), len(u16text))
-	fmt.Printf("copy(gtext, textbyte): %v\n", copy(gtext, u16text))
+
+	dst := unsafe.Slice((*uint16)(unsafe.Pointer(p)), len(u16text))
+	copy(dst, u16text)
+	
 	err = GlobalUnlock(h)
 	if err != nil {
 		return 0, err
@@ -76,4 +78,28 @@ func GetClipboardDataText() (string, error) {
 	defer GlobalUnlock(windows.Handle(r1))
 
 	return windows.UTF16PtrToString((*uint16)(unsafe.Pointer(p))), nil
+}
+
+func SetText(text string) error {
+	err := OpenClipboard(windows.GetShellWindow())
+	if err != nil {
+		return err
+	}
+
+	err = EmptyClipboard()
+	if err != nil {
+		return err
+	}
+
+	_, err = SetClipboardText(text)
+	if err != nil {
+		return err
+	}
+
+	err = CloseClipboard()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
