@@ -642,6 +642,43 @@ if !cancelled && err == nil {
 }
 ```
 
+### UsernamePasswordDialog
+
+#### `UsernamePasswordDialog(title string, usernameLabel string, passwordLabel string, defaultUsername string) (string, string, bool, error)`
+
+显示用户名（明文）和密码（星号遮蔽）输入字段的对话框。这是专门用于身份验证场景的便捷方法。
+
+**参数:**
+- `title`: 对话框标题
+- `usernameLabel`: 用户名输入框的标签
+- `passwordLabel`: 密码输入框的标签
+- `defaultUsername`: 用户名输入框的默认值
+
+**返回:**
+- `string`: 用户名输入内容
+- `string`: 密码输入内容
+- `bool`: 是否被取消（true = 取消，false = 确定）
+- `error`: 如果显示失败则返回错误
+
+**示例:**
+```go
+username, password, cancelled, err := win32utils.UsernamePasswordDialog(
+    "登录",
+    "用户名:",
+    "密码:",
+    "admin",
+)
+
+if err != nil {
+    fmt.Printf("登录对话框错误: %v\n", err)
+} else if cancelled {
+    fmt.Println("用户取消了登录")
+} else {
+    fmt.Printf("用户名: %s, 密码: %s\n", username, password)
+    // 注意：在实际应用中，此处应进行凭据验证
+}
+```
+
 ---
 
 ## 常量和类型

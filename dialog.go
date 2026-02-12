@@ -23,12 +23,12 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 	// Use DPI-scaled dimensions
 	dialogWidth := ScaleSize(380)
 	dialogHeight := ScaleSize(260) // Increased for larger font
-	
+
 	dialogHWnd, err := CreateWindowExW(
-		WindowExStyle{}.With(WS_EX_DLGMODALFRAME | WS_EX_TOPMOST),
+		WindowExStyle{}.With(WS_EX_DLGMODALFRAME|WS_EX_TOPMOST),
 		"dialog_input",
 		title,
-		WindowStyle{}.With(WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION),
+		WindowStyle{}.With(WS_OVERLAPPED|WS_SYSMENU|WS_CAPTION),
 		ScaleX(100), ScaleY(100), dialogWidth, dialogHeight,
 		0,
 		0,
@@ -44,7 +44,7 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 		WindowExStyle{},
 		"STATIC",
 		label1,
-		WindowStyle{}.With(WS_VISIBLE | WS_CHILD),
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD),
 		ScaleX(10), ScaleY(10), ScaleX(100), ScaleY(20),
 		dialogHWnd,
 		0,
@@ -56,7 +56,7 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 		WindowExStyle{}.With(WS_EX_CLIENTEDGE),
 		"EDIT",
 		defaultValue1,
-		WindowStyle{}.With(WS_VISIBLE | WS_CHILD | WS_TABSTOP),
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD|WS_TABSTOP),
 		ScaleX(120), ScaleY(10), ScaleX(245), ScaleY(26),
 		dialogHWnd,
 		windows.Handle(1001),
@@ -68,7 +68,7 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 		WindowExStyle{},
 		"STATIC",
 		label2,
-		WindowStyle{}.With(WS_VISIBLE | WS_CHILD),
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD),
 		ScaleX(10), ScaleY(50), ScaleX(100), ScaleY(20),
 		dialogHWnd,
 		0,
@@ -80,7 +80,7 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 		WindowExStyle{}.With(WS_EX_CLIENTEDGE),
 		"EDIT",
 		defaultValue2,
-		WindowStyle{}.With(WS_VISIBLE | WS_CHILD | WS_TABSTOP),
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD|WS_TABSTOP),
 		ScaleX(120), ScaleY(50), ScaleX(245), ScaleY(26),
 		dialogHWnd,
 		windows.Handle(1002),
@@ -92,7 +92,7 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 		WindowExStyle{},
 		"BUTTON",
 		"OK",
-		WindowStyle{}.With(WS_VISIBLE | WS_CHILD),
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD),
 		ScaleX(120), ScaleY(110), ScaleX(110), ScaleY(30),
 		dialogHWnd,
 		windows.Handle(IDOK),
@@ -104,7 +104,7 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 		WindowExStyle{},
 		"BUTTON",
 		"Cancel",
-		WindowStyle{}.With(WS_VISIBLE | WS_CHILD),
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD),
 		ScaleX(240), ScaleY(110), ScaleX(110), ScaleY(30),
 		dialogHWnd,
 		windows.Handle(IDCANCEL),
@@ -183,7 +183,7 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 	// Modal message loop - standard GetMessageW/DispatchMessageW pattern
 	const timeoutMs = 30000 // 30 second timeout
 	startTick := GetTickCount()
-	
+
 	for atomic.LoadInt32(&done) == 0 {
 		// Check timeout
 		elapsed := GetTickCount() - startTick
@@ -195,7 +195,7 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 		// DispatchMessageW will automatically route to the correct window procedure
 		var msg MSG
 		ret, _ := GetMessageW(&msg, 0, 0, 0)
-		
+
 		if ret == 0 {
 			// WM_QUIT received
 			break
@@ -204,7 +204,7 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 			// Error
 			break
 		}
-		
+
 		// Translate key messages (like Alt+key combinations)
 		TranslateMessage(&msg)
 		// Dispatch message to the appropriate window procedure
@@ -215,11 +215,222 @@ func TwoTextInputDialog(title, label1, label2 string, defaultValue1, defaultValu
 	if IsWindowW(dialogHWnd) {
 		DestroyWindow(dialogHWnd)
 	}
-	
+
 	// Clean up the window procedure mapping
 	setDialogWndProc(dialogHWnd, nil)
 
 	return result1, result2, cancelled, nil
+}
+
+// UsernamePasswordDialog displays a modal dialog with username (plaintext) and password (masked with asterisks) fields.
+// Returns (username, password, cancelled, error).
+func UsernamePasswordDialog(title, usernameLabel, passwordLabel string, defaultUsername, defaultPassword string) (string, string, bool, error) {
+	hInstance, err := getModuleHandleCurrentProcess()
+	if err != nil {
+		return "", "", false, fmt.Errorf("failed to get module handle: %w", err)
+	}
+
+	// Create a top-level window (not message-only) for the dialog
+	// Use DPI-scaled dimensions
+	dialogWidth := ScaleSize(380)
+	dialogHeight := ScaleSize(260) // Increased for larger font
+
+	dialogHWnd, err := CreateWindowExW(
+		WindowExStyle{}.With(WS_EX_DLGMODALFRAME|WS_EX_TOPMOST),
+		"dialog_username_password",
+		title,
+		WindowStyle{}.With(WS_OVERLAPPED|WS_SYSMENU|WS_CAPTION),
+		ScaleX(100), ScaleY(100), dialogWidth, dialogHeight,
+		0,
+		0,
+		hInstance,
+		0,
+	)
+	if err != nil {
+		return "", "", false, fmt.Errorf("failed to create dialog: %w", err)
+	}
+
+	// Create controls - all with DPI scaling
+	usernameLabelHwnd, _ := CreateWindowExW(
+		WindowExStyle{},
+		"STATIC",
+		usernameLabel,
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD),
+		ScaleX(10), ScaleY(10), ScaleX(100), ScaleY(20),
+		dialogHWnd,
+		0,
+		hInstance,
+		0,
+	)
+
+	usernameEditHwnd, _ := CreateWindowExW(
+		WindowExStyle{}.With(WS_EX_CLIENTEDGE),
+		"EDIT",
+		defaultUsername,
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD|WS_TABSTOP),
+		ScaleX(120), ScaleY(10), ScaleX(245), ScaleY(26),
+		dialogHWnd,
+		windows.Handle(1001),
+		hInstance,
+		0,
+	)
+
+	passwordLabelHwnd, _ := CreateWindowExW(
+		WindowExStyle{},
+		"STATIC",
+		passwordLabel,
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD),
+		ScaleX(10), ScaleY(50), ScaleX(100), ScaleY(20),
+		dialogHWnd,
+		0,
+		hInstance,
+		0,
+	)
+
+	passwordEditHwnd, _ := CreateWindowExW(
+		WindowExStyle{}.With(WS_EX_CLIENTEDGE),
+		"EDIT",
+		defaultPassword, // Empty default for password
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD|WS_TABSTOP|0x20), // ES_PASSWORD = 0x20
+		ScaleX(120), ScaleY(50), ScaleX(245), ScaleY(26),
+		dialogHWnd,
+		windows.Handle(1002),
+		hInstance,
+		0,
+	)
+
+	okHwnd, _ := CreateWindowExW(
+		WindowExStyle{},
+		"BUTTON",
+		"OK",
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD),
+		ScaleX(120), ScaleY(110), ScaleX(110), ScaleY(30),
+		dialogHWnd,
+		windows.Handle(IDOK),
+		hInstance,
+		0,
+	)
+
+	cancelHwnd, _ := CreateWindowExW(
+		WindowExStyle{},
+		"BUTTON",
+		"Cancel",
+		WindowStyle{}.With(WS_VISIBLE|WS_CHILD),
+		ScaleX(240), ScaleY(110), ScaleX(110), ScaleY(30),
+		dialogHWnd,
+		windows.Handle(IDCANCEL),
+		hInstance,
+		0,
+	)
+	_ = cancelHwnd
+
+	// Create and apply font to all controls
+	// Font size: 11pt (scaled for DPI)
+	fontHeight := ScaleSize(-14) // negative value for character height (11pt ≈ 14 pixels at 96 DPI)
+	uiFont, fontErr := CreateFontW(
+		fontHeight,
+		0,                   // width (0 = auto)
+		0,                   // escapement
+		0,                   // orientation
+		FW_NORMAL,           // weight
+		false, false, false, // italic, underline, strikeOut
+		DEFAULT_CHARSET,
+		OUT_DEFAULT_PRECIS,
+		CLIP_DEFAULT_PRECIS,
+		PROOF_QUALITY,
+		FF_DONTCARE,
+		"Segoe UI", // Modern Windows font
+	)
+	if fontErr == nil && uiFont != 0 {
+		// Apply font to all controls
+		SetWindowFontW(usernameLabelHwnd, uiFont, false)
+		SetWindowFontW(usernameEditHwnd, uiFont, false)
+		SetWindowFontW(passwordLabelHwnd, uiFont, false)
+		SetWindowFontW(passwordEditHwnd, uiFont, false)
+		SetWindowFontW(okHwnd, uiFont, false)
+		SetWindowFontW(cancelHwnd, uiFont, false)
+	}
+
+	// State variables
+	var username, password string
+	cancelled := false
+	var done int32 = 0
+
+	oldProc := setDialogWndProc(dialogHWnd, func(hwnd windows.HWND, msg uint32, wParam, lParam uintptr) uintptr {
+		switch msg {
+		case WM_COMMAND:
+			id := int32(wParam & 0xFFFF)
+			if id == IDOK {
+				userText, _ := GetWindowTextW(usernameEditHwnd)
+				passText, _ := GetWindowTextW(passwordEditHwnd)
+				username = userText
+				password = passText
+				atomic.StoreInt32(&done, 1)
+				PostMessageW(hwnd, WM_CLOSE, 0, 0)
+				return 0
+			} else if id == IDCANCEL {
+				cancelled = true
+				atomic.StoreInt32(&done, 1)
+				PostMessageW(hwnd, WM_CLOSE, 0, 0)
+				return 0
+			}
+
+		case WM_CLOSE:
+			DestroyWindow(hwnd)
+			return 0
+
+		case WM_DESTROY:
+			atomic.StoreInt32(&done, 1)
+			return 0
+		}
+		return DefWindowProcW(hwnd, msg, wParam, lParam)
+	})
+	defer setDialogWndProc(dialogHWnd, oldProc)
+
+	// Show dialog and set focus to username field
+	ShowWindowW(dialogHWnd, 5) // SW_SHOW
+	SetFocus(usernameEditHwnd)
+
+	// Modal message loop - standard GetMessageW/DispatchMessageW pattern
+	const timeoutMs = 30000 // 30 second timeout
+	startTick := GetTickCount()
+
+	for atomic.LoadInt32(&done) == 0 {
+		// Check timeout
+		elapsed := GetTickCount() - startTick
+		if elapsed > timeoutMs {
+			break
+		}
+
+		// Get next message from queue - use 0 to get messages from all windows
+		// DispatchMessageW will automatically route to the correct window procedure
+		var msg MSG
+		ret, _ := GetMessageW(&msg, 0, 0, 0)
+
+		if ret == 0 {
+			// WM_QUIT received
+			break
+		}
+		if ret == -1 {
+			// Error
+			break
+		}
+
+		// Translate key messages (like Alt+key combinations)
+		TranslateMessage(&msg)
+		// Dispatch message to the appropriate window procedure
+		DispatchMessageW(&msg)
+	}
+
+	// Cleanup - ensure window is destroyed
+	if IsWindowW(dialogHWnd) {
+		DestroyWindow(dialogHWnd)
+	}
+
+	// Clean up the window procedure mapping
+	setDialogWndProc(dialogHWnd, nil)
+
+	return username, password, cancelled, nil
 }
 
 var (
@@ -254,21 +465,30 @@ func dialogGlobalWndProc(hwnd windows.HWND, msg uint32, wParam, lParam uintptr) 
 }
 
 func init() {
-	// Register a single window class for all dialog windows we create
+	// Register window classes for dialog windows
 	dialogClassOnce.Do(func() {
 		hInstance, _ := getModuleHandleCurrentProcess()
-		classNamePtr, _ := windows.UTF16PtrFromString("dialog_input")
 
-		wcx := &WNDCLASSEXW{
+		// Register class for regular two-input dialogs
+		classNamePtr1, _ := windows.UTF16PtrFromString("dialog_input")
+		wcx1 := &WNDCLASSEXW{
 			LpfnWndProc:   syscall.NewCallback(dialogGlobalWndProc),
 			HInstance:     hInstance,
-			LpszClassName: classNamePtr,
+			LpszClassName: classNamePtr1,
 			HbrBackground: windows.Handle(uintptr(5) + 1), // COLOR_BTNFACE + 1
 		}
-		_, _ = registerClassExW(wcx)
+		_, _ = registerClassExW(wcx1)
+
+		// Register class for username/password dialogs
+		classNamePtr2, _ := windows.UTF16PtrFromString("dialog_username_password")
+		wcx2 := &WNDCLASSEXW{
+			LpfnWndProc:   syscall.NewCallback(dialogGlobalWndProc),
+			HInstance:     hInstance,
+			LpszClassName: classNamePtr2,
+			HbrBackground: windows.Handle(uintptr(5) + 1), // COLOR_BTNFACE + 1
+		}
+		_, _ = registerClassExW(wcx2)
 	})
 }
 
-var (
-	dialogClassOnce sync.Once
-)
+var dialogClassOnce sync.Once

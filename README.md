@@ -8,6 +8,7 @@
 - **📋 菜单支持** - 支持右键菜单，带有 Emoji 图标和自定义回调
 - **🎨 DPI 缩放** - 自动处理高 DPI 显示器的缩放
 - **📝 文本输入对话框** - 现代的 DPI 感知文本输入对话框
+- **🔐 登录对话框** - 用户名（明文）+ 密码（星号遮蔽）的专业登录界面
 - **🔔 Toast 通知** - Windows Toast 通知，支持 Emoji 图标和自定义消息
 - **🖥️ 控制台管理** - 显示/隐藏控制台窗口，控制台标题管理
 - **🚀 高级 API** - 流式构建器 API，简化应用程序创建
@@ -170,6 +171,7 @@ app.ShowNotificationError("标题", "发生错误！")
 创建模态文本输入对话框：
 
 ```go
+// 标准双文本输入对话框
 text1, text2, cancelled, err := app.ShowDialog(
 	"对话框标题",
 	"第一个输入框标签:",
@@ -182,6 +184,25 @@ if err != nil {
 	// 处理错误
 } else if !cancelled {
 	fmt.Printf("输入: %s, %s\n", text1, text2)
+}
+
+// 用户名密码登录对话框（专业版）
+username, password, cancelled, err := win32utils.UsernamePasswordDialog(
+	"用户登录",
+	"用户名:",
+	"密码:",
+	"", // 空的默认用户名
+)
+
+if err != nil {
+	// 处理错误
+} else if !cancelled {
+	// 验证凭据
+	if authenticateUser(username, password) {
+		fmt.Println("登录成功！")
+	} else {
+		fmt.Println("用户名或密码错误")
+	}
 }
 ```
 
@@ -241,6 +262,11 @@ if err != nil {
 - `IconTip(string)` - 设置托盘图标提示
 - `OnLeftClick(callback)` - 左键单击回调
 - `OnDoubleClick(callback)` - 双击回调
+
+### 对话框
+
+- `TwoTextInputDialog()` - 标准双文本输入对话框
+- `UsernamePasswordDialog()` - 用户名密码登录对话框（密码字段星号遮蔽）
 
 ## 系统要求
 
@@ -313,6 +339,7 @@ func main() {
 - 带 Emoji 的菜单项
 - Toast 通知（成功、警告、错误、信息）
 - 文本输入对话框
+- 用户名密码登录对话框
 - 事件处理回调
 
 ## 线程安全
@@ -340,6 +367,10 @@ A: 是的，可以在任何时刻调用 `AddMenuItem`。菜单将在下次右键
 **Q: 控制台管理功能有什么限制吗？**
 
 A: 控制台管理功能仅在应用程序有控制台窗口时有效。如果应用程序是GUI应用且没有关联的控制台，则这些函数可能会返回错误。
+
+**Q: UsernamePasswordDialog的安全性如何？**
+
+A: 密码字段使用Windows标准的ES_PASSWORD样式，输入时显示星号。但在内存中密码仍以明文形式存储，请确保在使用后正确清理敏感数据。
 
 ## 许可证
 
