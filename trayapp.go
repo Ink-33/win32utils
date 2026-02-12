@@ -11,31 +11,31 @@ import (
 
 // TrayAppConfig holds configuration for a tray application.
 type TrayAppConfig struct {
-	AppID         string              // Application ID for notifications
-	AppName       string              // Display name
-	IconID        uint32              // System icon ID (e.g., IDI_INFORMATION)
-	IconTip       string              // Tooltip when hovering over tray icon
-	MenuItems     []*TrayMenuItem     // Menu items configuration
-	OnLeftClick   func()              // Callback when tray icon is left-clicked
-	OnDoubleClick func()              // Callback when tray icon is double-clicked
+	AppID         string          // Application ID for notifications
+	AppName       string          // Display name
+	IconID        uint32          // System icon ID (e.g., IDI_INFORMATION)
+	IconTip       string          // Tooltip when hovering over tray icon
+	MenuItems     []*TrayMenuItem // Menu items configuration
+	OnLeftClick   func()          // Callback when tray icon is left-clicked
+	OnDoubleClick func()          // Callback when tray icon is double-clicked
 }
 
 // TrayMenuItem represents a menu item in the tray context menu.
 type TrayMenuItem struct {
-	Label       string       // Display text
-	OnClick     func()       // Callback when clicked
-	IsSeparator bool        // If true, this is a separator line
-	Icon        string       // Optional: emoji or icon character
+	Label       string // Display text
+	OnClick     func() // Callback when clicked
+	IsSeparator bool   // If true, this is a separator line
+	Icon        string // Optional: emoji or icon character
 }
 
 // TrayApp is a simplified tray application wrapper.
 type TrayApp struct {
-	config    *TrayAppConfig
-	tray      *TrayIcon
-	menu      *PopupMenu
-	mu        sync.RWMutex
-	done      bool
-	hIcon     uintptr
+	config *TrayAppConfig
+	tray   *TrayIcon
+	menu   *PopupMenu
+	mu     sync.RWMutex
+	done   bool
+	hIcon  uintptr
 }
 
 // NewTrayApp creates a new tray application with the given configuration.
@@ -175,38 +175,88 @@ func (app *TrayApp) AddMenuSeparator() error {
 	return app.menu.AddSeparator()
 }
 
-// ShowNotification displays a simple notification.
+// NotificationDuration specifies how long a notification should be displayed.
+type NotificationDuration string
+
+const (
+	// DurationShort - notification auto-closes after ~5 seconds
+	DurationShort NotificationDuration = "short"
+	// DurationLong - notification auto-closes after ~10 seconds (default)
+	DurationLong NotificationDuration = "long"
+)
+
+// ShowNotification displays a simple notification with default duration (long).
 func (app *TrayApp) ShowNotification(title, message string) error {
+	return app.ShowNotificationEx(title, message, DurationLong)
+}
+
+// ShowNotificationEx displays a notification with custom auto-close duration.
+// duration: "short" (~5 seconds) or "long" (~10 seconds)
+func (app *TrayApp) ShowNotificationEx(title, message string, duration NotificationDuration) error {
 	return SimpleToast(app.config.AppID, title, message)
 }
 
-// ShowNotificationWithEmoji displays a notification with an emoji.
+// ShowNotificationWithEmoji displays a notification with an emoji and default duration.
 func (app *TrayApp) ShowNotificationWithEmoji(emoji, title, message string) error {
+	return app.ShowNotificationWithEmojiEx(emoji, title, message, DurationLong)
+}
+
+// ShowNotificationWithEmojiEx displays a notification with emoji and custom duration.
+// duration: "short" (~5 seconds) or "long" (~10 seconds)
+func (app *TrayApp) ShowNotificationWithEmojiEx(emoji, title, message string, duration NotificationDuration) error {
+	d := string(duration)
+	if d != "short" && d != "long" {
+		d = "long"
+	}
 	return NewAdvancedToastBuilder(app.config.AppID).
 		Title(emoji + " " + title).
 		Message(message).
-		Duration("long").
+		Duration(d).
 		Show()
 }
 
-// ShowNotificationSuccess displays a success notification.
+// ShowNotificationSuccess displays a success notification with default duration.
 func (app *TrayApp) ShowNotificationSuccess(title, message string) error {
-	return app.ShowNotificationWithEmoji("✅", title, message)
+	return app.ShowNotificationSuccessEx(title, message, DurationLong)
 }
 
-// ShowNotificationWarning displays a warning notification.
+// ShowNotificationSuccessEx displays a success notification with custom duration.
+// duration: "short" (~5 seconds) or "long" (~10 seconds)
+func (app *TrayApp) ShowNotificationSuccessEx(title, message string, duration NotificationDuration) error {
+	return app.ShowNotificationWithEmojiEx("✅", title, message, duration)
+}
+
+// ShowNotificationWarning displays a warning notification with default duration.
 func (app *TrayApp) ShowNotificationWarning(title, message string) error {
-	return app.ShowNotificationWithEmoji("⚠️", title, message)
+	return app.ShowNotificationWarningEx(title, message, DurationLong)
 }
 
-// ShowNotificationError displays an error notification.
+// ShowNotificationWarningEx displays a warning notification with custom duration.
+// duration: "short" (~5 seconds) or "long" (~10 seconds)
+func (app *TrayApp) ShowNotificationWarningEx(title, message string, duration NotificationDuration) error {
+	return app.ShowNotificationWithEmojiEx("⚠️", title, message, duration)
+}
+
+// ShowNotificationError displays an error notification with default duration.
 func (app *TrayApp) ShowNotificationError(title, message string) error {
-	return app.ShowNotificationWithEmoji("❌", title, message)
+	return app.ShowNotificationErrorEx(title, message, DurationLong)
 }
 
-// ShowNotificationInfo displays an info notification.
+// ShowNotificationErrorEx displays an error notification with custom duration.
+// duration: "short" (~5 seconds) or "long" (~10 seconds)
+func (app *TrayApp) ShowNotificationErrorEx(title, message string, duration NotificationDuration) error {
+	return app.ShowNotificationWithEmojiEx("❌", title, message, duration)
+}
+
+// ShowNotificationInfo displays an info notification with default duration.
 func (app *TrayApp) ShowNotificationInfo(title, message string) error {
-	return app.ShowNotificationWithEmoji("ℹ️", title, message)
+	return app.ShowNotificationInfoEx(title, message, DurationLong)
+}
+
+// ShowNotificationInfoEx displays an info notification with custom duration.
+// duration: "short" (~5 seconds) or "long" (~10 seconds)
+func (app *TrayApp) ShowNotificationInfoEx(title, message string, duration NotificationDuration) error {
+	return app.ShowNotificationWithEmojiEx("ℹ️", title, message, duration)
 }
 
 // ShowDialog displays a modal text input dialog.

@@ -202,9 +202,13 @@ err := app.AddMenuSeparator()
 
 所有通知方法都是线程安全的，可以从任何线程调用。
 
+通知会在一定时间后自动关闭：
+- **短时长** (`DurationShort`) - 约 5 秒后自动关闭
+- **长时长** (`DurationLong`) - 约 10 秒后自动关闭（默认）
+
 #### `ShowNotificationSuccess(title string, message string) error`
 
-显示成功通知（✅ 图标）。
+显示成功通知（✅ 图标），使用默认时长（~10秒）。
 
 **参数:**
 - `title`: 通知标题
@@ -217,9 +221,29 @@ err := app.AddMenuSeparator()
 err := app.ShowNotificationSuccess("完成", "操作成功！")
 ```
 
+#### `ShowNotificationSuccessEx(title string, message string, duration NotificationDuration) error`
+
+显示成功通知（✅ 图标），支持自定义自动关闭时长。
+
+**参数:**
+- `title`: 通知标题
+- `message`: 通知消息
+- `duration`: 通知持续时长 - `DurationShort` (~5秒) 或 `DurationLong` (~10秒)
+
+**返回:**
+- `error`: 如果显示失败则返回错误
+
+```go
+// 快速关闭（5秒）
+err := app.ShowNotificationSuccessEx("完成", "操作成功！", win32utils.DurationShort)
+
+// 长时长（10秒）
+err := app.ShowNotificationSuccessEx("完成", "操作成功！", win32utils.DurationLong)
+```
+
 #### `ShowNotificationWarning(title string, message string) error`
 
-显示警告通知（⚠️ 图标）。
+显示警告通知（⚠️ 图标），使用默认时长。
 
 **参数:**
 - `title`: 通知标题
@@ -232,9 +256,23 @@ err := app.ShowNotificationSuccess("完成", "操作成功！")
 err := app.ShowNotificationWarning("警告", "请检查您的输入")
 ```
 
+#### `ShowNotificationWarningEx(title string, message string, duration NotificationDuration) error`
+
+显示警告通知（⚠️ 图标），支持自定义自动关闭时长。
+
+**参数:**
+- `title`: 通知标题
+- `message`: 通知消息
+- `duration`: 通知持续时长 - `DurationShort` 或 `DurationLong`
+
+```go
+// 快速关闭的警告
+err := app.ShowNotificationWarningEx("警告", "即将超时", win32utils.DurationShort)
+```
+
 #### `ShowNotificationError(title string, message string) error`
 
-显示错误通知（❌ 图标）。
+显示错误通知（❌ 图标），使用默认时长。
 
 **参数:**
 - `title`: 通知标题
@@ -247,9 +285,23 @@ err := app.ShowNotificationWarning("警告", "请检查您的输入")
 err := app.ShowNotificationError("错误", "发生了错误，请重试")
 ```
 
+#### `ShowNotificationErrorEx(title string, message string, duration NotificationDuration) error`
+
+显示错误通知（❌ 图标），支持自定义自动关闭时长。
+
+**参数:**
+- `title`: 通知标题
+- `message`: 通知消息
+- `duration`: 通知持续时长 - `DurationShort` 或 `DurationLong`
+
+```go
+// 长时长错误提示
+err := app.ShowNotificationErrorEx("发生错误", "请联系管理员", win32utils.DurationLong)
+```
+
 #### `ShowNotificationInfo(title string, message string) error`
 
-显示信息通知（ℹ️ 图标）。
+显示信息通知（ℹ️ 图标），使用默认时长。
 
 **参数:**
 - `title`: 通知标题
@@ -260,6 +312,20 @@ err := app.ShowNotificationError("错误", "发生了错误，请重试")
 
 ```go
 err := app.ShowNotificationInfo("信息", "这是一条信息消息")
+```
+
+#### `ShowNotificationInfoEx(title string, message string, duration NotificationDuration) error`
+
+显示信息通知（ℹ️ 图标），支持自定义自动关闭时长。
+
+**参数:**
+- `title`: 通知标题
+- `message`: 通知消息
+- `duration`: 通知持续时长 - `DurationShort` 或 `DurationLong`
+
+```go
+// 快速关闭的提示
+err := app.ShowNotificationInfoEx("状态", "已就绪", win32utils.DurationShort)
 ```
 
 ### 对话框方法
@@ -579,6 +645,26 @@ if !cancelled && err == nil {
 ---
 
 ## 常量和类型
+
+### 通知持续时长
+
+```go
+type NotificationDuration string
+
+const (
+    DurationShort NotificationDuration = "short"  // ~5秒后自动关闭
+    DurationLong  NotificationDuration = "long"   // ~10秒后自动关闭（默认）
+)
+```
+
+**使用示例:**
+```go
+// 快速关闭（5秒）
+err := app.ShowNotificationSuccessEx("完成", "操作成功！", win32utils.DurationShort)
+
+// 长时长（10秒）
+err := app.ShowNotificationErrorEx("错误", "请检查输入", win32utils.DurationLong)
+```
 
 ### 通知状态 Emoji
 

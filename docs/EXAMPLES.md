@@ -338,6 +338,151 @@ func main() {
 
 ---
 
+## 通知自动关闭（新功能）
+
+### 快速关闭通知
+
+某些情况下你可能希望通知更快地自动关闭（如临时状态提示）：
+
+```go
+package main
+
+import (
+	"repo.smlk.org/win32utils"
+)
+
+func main() {
+	win32utils.ToHighDPI()
+
+	app, _ := win32utils.NewTrayAppBuilder("com.example.quicknotify").
+		Name("快速通知演示").
+		Build()
+	defer app.Close()
+
+	// 快速关闭的通知（约5秒）
+	app.AddMenuItemWithEmoji("⚡", "快速通知", func() {
+		// 使用 Ex 版本指定时长
+		app.ShowNotificationInfoEx(
+			"快速提示",
+			"这条通知会在5秒后自动关闭",
+			win32utils.DurationShort,
+		)
+	})
+
+	// 长时长通知（约10秒，默认）
+	app.AddMenuItemWithEmoji("📌", "长时通知", func() {
+		app.ShowNotificationInfoEx(
+			"重要信息",
+			"这条通知会在10秒后自动关闭",
+			win32utils.DurationLong,
+		)
+	})
+
+	app.AddMenuSeparator()
+
+	// 不同类型的快速通知
+	app.AddMenuItemWithEmoji("✅", "快速成功", func() {
+		app.ShowNotificationSuccessEx(
+			"完成",
+			"操作已成功完成！",
+			win32utils.DurationShort,
+		)
+	})
+
+	app.AddMenuItemWithEmoji("⚠️", "快速警告", func() {
+		app.ShowNotificationWarningEx(
+			"警告",
+			"请立即处理此问题！",
+			win32utils.DurationShort,
+		)
+	})
+
+	app.AddMenuItemWithEmoji("❌", "长时错误", func() {
+		app.ShowNotificationErrorEx(
+			"错误",
+			"发生严重错误，请查看日志",
+			win32utils.DurationLong,
+		)
+	})
+
+	app.AddMenuSeparator()
+
+	app.AddMenuItemWithEmoji("👋", "Exit", func() {
+		app.Exit()
+	})
+
+	app.Run()
+}
+```
+
+### 基于场景选择通知时长
+
+根据通知的重要程度选择合适的自动关闭时长：
+
+```go
+package main
+
+import (
+	"repo.smlk.org/win32utils"
+)
+
+func main() {
+	win32utils.ToHighDPI()
+
+	app, _ := win32utils.NewTrayAppBuilder("com.example.smartnotify").
+		Name("智能通知演示").
+		Build()
+	defer app.Close()
+
+	// 临时状态提示 - 快速关闭
+	app.AddMenuItemWithEmoji("🔄", "重新加载", func() {
+		app.ShowNotificationInfoEx(
+			"重新加载中",
+			"正在重新加载数据...",
+			win32utils.DurationShort, // 5秒
+		)
+		// 实际执行重新加载
+	})
+
+	// 成功完成 - 快速关闭
+	app.AddMenuItemWithEmoji("💾", "保存", func() {
+		app.ShowNotificationSuccessEx(
+			"已保存",
+			"文件已成功保存",
+			win32utils.DurationShort, // 5秒
+		)
+	})
+
+	// 需要用户注意的错误 - 长时显示
+	app.AddMenuItemWithEmoji("🔧", "修复问题", func() {
+		app.ShowNotificationErrorEx(
+			"维护必需",
+			"系统需要立即维护，请保存工作",
+			win32utils.DurationLong, // 10秒
+		)
+	})
+
+	// 重要警告 - 长时显示
+	app.AddMenuItemWithEmoji("⚠️", "配置检查", func() {
+		app.ShowNotificationWarningEx(
+			"配置警告",
+			"您的配置可能不安全，请立即审查",
+			win32utils.DurationLong, // 10秒
+		)
+	})
+
+	app.AddMenuSeparator()
+
+	app.AddMenuItemWithEmoji("👋", "Exit", func() {
+		app.Exit()
+	})
+
+	app.Run()
+}
+```
+
+---
+
 ## 对话框操作
 
 ### 简单输入对话框
