@@ -265,6 +265,13 @@ func (app *TrayApp) ShowDialog(dialogTitle, label1, label2, default1, default2 s
 	return TwoTextInputDialog(dialogTitle, label1, label2, default1, default2)
 }
 
+// ShowUsernamePasswordDialog displays a modal dialog with username and password input fields.
+// The password field is masked with asterisks.
+// Returns (username, password, cancelled, error).
+func (app *TrayApp) ShowUsernamePasswordDialog(title, usernameLabel, passwordLabel string, defaultUsername, defaultPassword string) (string, string, bool, error) {
+	return UsernamePasswordDialog(title, usernameLabel, passwordLabel, defaultUsername, defaultPassword)
+}
+
 // Run starts the message loop (blocking until PostQuitMessage is called).
 // This typically runs in main().
 func (app *TrayApp) Run() (int32, error) {
