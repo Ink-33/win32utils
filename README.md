@@ -9,6 +9,7 @@
 - **🎨 DPI 缩放** - 自动处理高 DPI 显示器的缩放
 - **📝 文本输入对话框** - 现代的 DPI 感知文本输入对话框
 - **🔔 Toast 通知** - Windows Toast 通知，支持 Emoji 图标和自定义消息
+- **🖥️ 控制台管理** - 显示/隐藏控制台窗口，控制台标题管理
 - **🚀 高级 API** - 流式构建器 API，简化应用程序创建
 - **⚙️ 无 CGO** - 使用 `golang.org/x/sys/windows` 纯 Go 实现，无 CGO 依赖
 
@@ -78,6 +79,53 @@ func main() {
 - 通知
 - 对话框
 - 消息循环
+
+### 控制台管理
+
+新增的控制台管理功能允许您控制应用程序的控制台窗口：
+
+``go
+// 显示控制台窗口
+err := win32utils.ShowConsole()
+if err != nil {
+    log.Printf("Failed to show console: %v", err)
+}
+
+// 隐藏控制台窗口
+err = win32utils.HideConsole()
+if err != nil {
+    log.Printf("Failed to hide console: %v", err)
+}
+
+// 切换控制台可见性
+isVisible, err := win32utils.ToggleConsole()
+if err != nil {
+    log.Printf("Failed to toggle console: %v", err)
+} else {
+    fmt.Printf("Console is now %s\n", map[bool]string{true: "visible", false: "hidden"}[isVisible])
+}
+
+// 检查控制台是否可见
+visible, err := win32utils.IsConsoleVisible()
+if err != nil {
+    log.Printf("Failed to check console visibility: %v", err)
+} else {
+    fmt.Printf("Console visibility: %v\n", visible)
+}
+
+// 管理控制台标题
+currentTitle, err := win32utils.GetConsoleTitle()
+if err != nil {
+    log.Printf("Failed to get console title: %v", err)
+} else {
+    fmt.Printf("Current console title: %s\n", currentTitle)
+}
+
+err = win32utils.SetConsoleTitle("My Application Console")
+if err != nil {
+    log.Printf("Failed to set console title: %v", err)
+}
+```
 
 ### 构建器模式
 
@@ -150,6 +198,7 @@ if err != nil {
 ├── notification.go          # Toast 通知系统
 ├── dialog.go                # 文本输入对话框
 ├── window.go                # 窗口创建和管理
+├── console.go               # 控制台管理功能
 ├── dll.go                   # Windows DLL 句柄
 ├── winbase.go               # Windows 结构和常量
 │
@@ -160,6 +209,17 @@ if err != nil {
 ```
 
 ## 主要 API
+
+### 控制台管理
+
+- `GetConsoleWindow()` - 获取控制台窗口句柄
+- `ShowConsole()` - 显示控制台窗口
+- `HideConsole()` - 隐藏控制台窗口
+- `ToggleConsole()` - 切换控制台可见性
+- `IsConsoleVisible()` - 检查控制台是否可见
+- `GetConsoleTitle()` - 获取控制台标题
+- `SetConsoleTitle()` - 设置控制台标题
+- `ShowWindow(hwnd, cmd)` - 通用窗口显示控制
 
 ### TrayApp
 
@@ -189,6 +249,57 @@ if err != nil {
 - 用于 Toast 通知的 PowerShell
 
 ## 示例
+
+### 控制台管理示例
+
+``go
+package main
+
+import (
+    "fmt"
+    "log"
+    "time"
+    
+    "repo.smlk.org/win32utils"
+)
+
+func main() {
+    // 演示控制台管理功能
+    
+    // 获取当前状态
+    visible, err := win32utils.IsConsoleVisible()
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("Console initially %s\n", map[bool]string{true: "visible", false: "hidden"}[visible])
+    
+    // 隐藏控制台
+    fmt.Println("Hiding console in 2 seconds...")
+    time.Sleep(2 * time.Second)
+    err = win32utils.HideConsole()
+    if err != nil {
+        log.Printf("Error hiding console: %v", err)
+    }
+    
+    // 等待3秒
+    time.Sleep(3 * time.Second)
+    
+    // 显示控制台
+    fmt.Println("Showing console...")
+    err = win32utils.ShowConsole()
+    if err != nil {
+        log.Printf("Error showing console: %v", err)
+    }
+    
+    // 修改控制台标题
+    err = win32utils.SetConsoleTitle("Demo Application Console")
+    if err != nil {
+        log.Printf("Error setting console title: %v", err)
+    }
+    
+    fmt.Println("Console management demo completed!")
+}
+```
 
 ### 基本托盘应用
 
@@ -225,6 +336,10 @@ A: Toast 通知显示在 Windows 10/11 的通知中心。需要 PowerShell 支�
 **Q: 可以在应用运行时添加菜单项吗？**
 
 A: 是的，可以在任何时刻调用 `AddMenuItem`。菜单将在下次右键单击时更新。
+
+**Q: 控制台管理功能有什么限制吗？**
+
+A: 控制台管理功能仅在应用程序有控制台窗口时有效。如果应用程序是GUI应用且没有关联的控制台，则这些函数可能会返回错误。
 
 ## 许可证
 
