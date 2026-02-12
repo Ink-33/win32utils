@@ -6,9 +6,11 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-const CF_TEXT uintptr = 1
-const CF_UNICODETEXT uintptr = 13
-const CF_LOCALE uintptr = 16
+const (
+	CF_TEXT        uintptr = 1
+	CF_UNICODETEXT uintptr = 13
+	CF_LOCALE      uintptr = 16
+)
 
 func OpenClipboard(hwnd windows.HWND) error {
 	r1, _, _ := User32.NewProc("OpenClipboard").Call(uintptr(hwnd))
@@ -17,6 +19,7 @@ func OpenClipboard(hwnd windows.HWND) error {
 	}
 	return nil
 }
+
 func CloseClipboard() error {
 	r1, _, _ := User32.NewProc("CloseClipboard").Call()
 	if r1 == 0 {
@@ -24,6 +27,7 @@ func CloseClipboard() error {
 	}
 	return nil
 }
+
 func EmptyClipboard() error {
 	r1, _, _ := User32.NewProc("EmptyClipboard").Call()
 	if r1 == 0 {
@@ -31,6 +35,7 @@ func EmptyClipboard() error {
 	}
 	return nil
 }
+
 func SetClipboardText(text string) (handle windows.Handle, err error) {
 	proc := User32.NewProc("SetClipboardData")
 	u16text, err := windows.UTF16FromString(text)
@@ -66,7 +71,7 @@ func SetClipboardText(text string) (handle windows.Handle, err error) {
 }
 
 func GetClipboardDataText() (string, error) {
-	r1, _, _ := User32.NewProc("GetClipboardData").Call(CF_UNICODETEXT)
+	r1, _, _ := User32.NewProc("GetClipboardData").Call(CF_TEXT)
 	if r1 == 0 {
 		return "", windows.GetLastError()
 	}
