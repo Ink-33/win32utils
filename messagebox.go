@@ -51,3 +51,16 @@ func ToHighDPI() {
 		_, _, _ = User32.NewProc("SetThreadDpiAwarenessContext").Call(i)
 	}
 }
+
+// ToHighDPIEx tries to raise DPI awareness context to DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED for the process
+func ToHighDPIEx() {
+	systemAware := ^uintptr(2) + 1
+	unawareGDIScaled := ^uintptr(5) + 1
+	proc := User32.NewProc("SetProcessDpiAwarenessContext")
+	if proc.Find() != nil {
+		return
+	}
+	for i := unawareGDIScaled; i <= systemAware; i++ {
+		_, _, _ = User32.NewProc("SetProcessDpiAwarenessContext").Call(i)
+	}
+}
