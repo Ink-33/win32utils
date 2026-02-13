@@ -274,7 +274,7 @@ func (app *TrayApp) ShowUsernamePasswordDialog(title, usernameLabel, passwordLab
 
 // MessageBoxW displays a message box with the given caption, title, and flags.
 func (app *TrayApp) MessageBoxW(caption, title string, flags uint) int {
-	return MessageBoxW(uintptr(app.tray.hwnd), caption, title, flags)
+	return MessageBoxW(0, caption, title, flags)
 }
 
 // Run starts the message loop (blocking until PostQuitMessage is called).
