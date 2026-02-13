@@ -25,8 +25,7 @@ const (
 	WM_LBUTTONDOWN   uint32 = 0x0201
 	WM_RBUTTONDOWN   uint32 = 0x0204
 	WM_LBUTTONDBLCLK uint32 = 0x0203
-	IDOK             int32  = 1
-	IDCANCEL         int32  = 2
+
 )
 
 // WndProc is the window procedure callback.
