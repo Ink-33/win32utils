@@ -1,26 +1,28 @@
 # Win32Utils
 
-一个 Go 语言库，用于简化 Windows 系统托盘应用程序开发。提供了对 Windows API 的高级封装，使得创建具有系统托盘图标、菜单、对话框和 Toast 通知的应用程序变得简单直观。
+一个面向 Windows 的纯 Go Win32 工具库，聚焦系统托盘应用开发与常见桌面能力封装（通知、对话框、消息框、剪贴板、控制台、窗口消息循环）。
 
 ## 特性
 
-- **🎯 系统托盘图标** - 快速创建和管理系统托盘图标
-- **📋 菜单支持** - 支持右键菜单，带有 Emoji 图标和自定义回调
-- **🎨 DPI 缩放** - 自动处理高 DPI 显示器的缩放
-- **📝 文本输入对话框** - 现代的 DPI 感知文本输入对话框
-- **🔐 登录对话框** - 用户名（明文）+ 密码（星号遮蔽）的专业登录界面
-- **🔔 Toast 通知** - Windows Toast 通知，支持 Emoji 图标和自定义消息
-- **🖥️ 控制台管理** - 显示/隐藏控制台窗口，控制台标题管理
-- **🚀 高级 API** - 流式构建器 API，简化应用程序创建
-- **⚙️ 无 CGO** - 使用 `golang.org/x/sys/windows` 纯 Go 实现，无 CGO 依赖
+- 托盘应用：`TrayApp` + 构建器 API
+- 托盘菜单：支持普通菜单项、分隔符、Emoji 前缀
+- 通知：Toast 通知（含 `short/long` 自动关闭时长）
+- 对话框：双文本输入、用户名密码输入（密码掩码）
+- 消息框：`MessageBoxW` 与常用 `MB_*` / `ID*` 常量
+- 控制台管理：显示/隐藏、标题读写、可见性检测
+- 剪贴板：文本写入与读取
+- DPI 与窗口工具：高 DPI、消息循环及 Win32 辅助 API
+- 纯 Go 实现：基于 `golang.org/x/sys/windows`，无 CGO
 
 ## 安装
 
+项目当前模块路径：
+
 ```bash
-go get github.com/Ink-33/win32utils
+go get repo.smlk.org/win32utils
 ```
 
-或使用 `go.mod` 中的模块：
+导入方式：
 
 ```go
 import "repo.smlk.org/win32utils"
@@ -33,353 +35,112 @@ package main
 
 import (
 	"fmt"
+
 	"repo.smlk.org/win32utils"
 )
 
 func main() {
-	// 启用高 DPI 支持
-	win32utils.ToHighDPI()
+	win32utils.ToHighDPIEx()
 
-	// 创建托盘应用
-	app, err := win32utils.NewTrayAppBuilder("com.example.myapp").
+	builder := win32utils.NewTrayAppBuilder("com.example.myapp").
 		Name("My Application").
-		IconID(32516). // IDI_INFORMATION
-		IconTip("My App Tray Icon").
-		Build()
+		IconID(32516).
+		IconTip("My App Tray Icon")
+
+	app, err := builder.Build()
 	if err != nil {
 		panic(err)
 	}
 	defer app.Close()
 
-	// 添加菜单项
 	_ = app.AddMenuItemWithEmoji("⚙️", "Settings", func() {
-		app.ShowNotificationInfo("Settings", "Opening settings...")
+		_ = app.ShowNotificationInfo("Settings", "Opening settings...")
 	})
-
+	_ = app.AddMenuSeparator()
 	_ = app.AddMenuItemWithEmoji("👋", "Exit", func() {
 		app.Exit()
 	})
 
-	// 运行消息循环
 	exitCode, err := app.Run()
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("应用已退出，代码: %d\n", exitCode)
+	fmt.Printf("应用退出码: %d\n", exitCode)
 }
 ```
 
-## 核心概念
-
-### TrayApp - 高级应用抽象
-
-`TrayApp` 是一个高级封装，用于管理托盘应用的完整生命周期。它包括：
-- 托盘图标管理
-- 菜单管理
-- 通知
-- 对话框
-- 消息循环
-
-### 控制台管理
-
-新增的控制台管理功能允许您控制应用程序的控制台窗口：
-
-``go
-// 显示控制台窗口
-err := win32utils.ShowConsole()
-if err != nil {
-    log.Printf("Failed to show console: %v", err)
-}
-
-// 隐藏控制台窗口
-err = win32utils.HideConsole()
-if err != nil {
-    log.Printf("Failed to hide console: %v", err)
-}
-
-// 切换控制台可见性
-isVisible, err := win32utils.ToggleConsole()
-if err != nil {
-    log.Printf("Failed to toggle console: %v", err)
-} else {
-    fmt.Printf("Console is now %s\n", map[bool]string{true: "visible", false: "hidden"}[isVisible])
-}
-
-// 检查控制台是否可见
-visible, err := win32utils.IsConsoleVisible()
-if err != nil {
-    log.Printf("Failed to check console visibility: %v", err)
-} else {
-    fmt.Printf("Console visibility: %v\n", visible)
-}
-
-// 管理控制台标题
-currentTitle, err := win32utils.GetConsoleTitle()
-if err != nil {
-    log.Printf("Failed to get console title: %v", err)
-} else {
-    fmt.Printf("Current console title: %s\n", currentTitle)
-}
-
-err = win32utils.SetConsoleTitle("My Application Console")
-if err != nil {
-    log.Printf("Failed to set console title: %v", err)
-}
-```
-
-### 构建器模式
-
-使用流式 `TrayAppBuilder` API 配置您的应用：
-
-```go
-builder := win32utils.NewTrayAppBuilder("appID").
-	Name("App Name").
-	IconID(32516).
-	IconTip("Tooltip").
-	OnLeftClick(func() { /* ... */ }).
-	OnDoubleClick(func() { /* ... */ })
-
-app, err := builder.Build()
-```
-
-### DPI 感知
-
-所有 UI 元素都是 DPI 感知的：
-
-```go
-// 启用系统范围的高 DPI 支持
-win32utils.ToHighDPI()
-```
-
-### 通知系统
-
-支持四种预定义的通知类型，使用 Emoji 图标：
-
-- `ShowNotificationSuccess()` - ✅ 成功通知
-- `ShowNotificationWarning()` - ⚠️ 警告通知
-- `ShowNotificationError()` - ❌ 错误通知
-- `ShowNotificationInfo()` - ℹ️ 信息通知
-
-```go
-app.ShowNotificationSuccess("标题", "操作成功！")
-app.ShowNotificationError("标题", "发生错误！")
-```
-
-### 对话框
-
-创建模态文本输入对话框：
-
-```go
-// 标准双文本输入对话框
-text1, text2, cancelled, err := app.ShowDialog(
-	"对话框标题",
-	"第一个输入框标签:",
-	"第二个输入框标签:",
-	"默认值1",
-	"默认值2",
-)
-
-if err != nil {
-	// 处理错误
-} else if !cancelled {
-	fmt.Printf("输入: %s, %s\n", text1, text2)
-}
-
-// 用户名密码登录对话框（专业版）
-username, password, cancelled, err := win32utils.UsernamePasswordDialog(
-	"用户登录",
-	"用户名:",
-	"密码:",
-	"", // 空的默认用户名
-)
-
-if err != nil {
-	// 处理错误
-} else if !cancelled {
-	// 验证凭据
-	if authenticateUser(username, password) {
-		fmt.Println("登录成功！")
-	} else {
-		fmt.Println("用户名或密码错误")
-	}
-}
-```
-
-## 项目结构
-
-```
-.
-├── README.md                 # 项目文档
-├── go.mod                    # Go 模块定义
-├── LICENSE                   # 许可证
-│
-├── trayapp.go               # 高级 TrayApp 抽象层
-├── trayicon.go              # 托盘图标和菜单管理
-├── notification.go          # Toast 通知系统
-├── dialog.go                # 文本输入对话框
-├── window.go                # 窗口创建和管理
-├── console.go               # 控制台管理功能
-├── dll.go                   # Windows DLL 句柄
-├── winbase.go               # Windows 结构和常量
-│
-├── cmd/
-│   └── main.go              # 示例应用程序
-│
-└── *_test.go                # 单元测试
-```
-
-## 主要 API
-
-### 控制台管理
-
-- `GetConsoleWindow()` - 获取控制台窗口句柄
-- `ShowConsole()` - 显示控制台窗口
-- `HideConsole()` - 隐藏控制台窗口
-- `ToggleConsole()` - 切换控制台可见性
-- `IsConsoleVisible()` - 检查控制台是否可见
-- `GetConsoleTitle()` - 获取控制台标题
-- `SetConsoleTitle()` - 设置控制台标题
-- `ShowWindow(hwnd, cmd)` - 通用窗口显示控制
+## 常用 API 概览
 
 ### TrayApp
 
-- `NewTrayAppBuilder(appID string)` - 创建构建器
-- `Build()` - 构建 TrayApp 实例
-- `AddMenuItem(label, callback)` - 添加菜单项
-- `AddMenuItemWithEmoji(emoji, label, callback)` - 添加带 Emoji 的菜单项
-- `AddMenuSeparator()` - 添加分隔符
-- `ShowNotificationSuccess/Warning/Error/Info()` - 显示通知
-- `ShowDialog()` - 显示对话框
-- `Run()` - 启动消息循环（阻塞）
-- `Close()` - 关闭应用并清理资源
-- `Exit()` - 退出应用
+- `NewTrayAppBuilder(appID string)`
+- `(*TrayAppBuilder).Name/IconID/IconTip/OnLeftClick/OnDoubleClick`
+- `(*TrayAppBuilder).AddMenuItem/AddMenuItemWithEmoji/AddMenuSeparator/Build`
+- `(*TrayApp).AddMenuItem/AddMenuItemWithEmoji/AddMenuSeparator`
+- `(*TrayApp).ShowNotification*`（含 `Ex` 版本）
+- `(*TrayApp).ShowDialog/ShowUsernamePasswordDialog`
+- `(*TrayApp).MessageBoxW/Run/Exit/Close`
 
-### 构建器选项
+### 通知与对话框
 
-- `Name(string)` - 设置应用名称
-- `IconID(uint16)` - 设置系统图标 ID
-- `IconTip(string)` - 设置托盘图标提示
-- `OnLeftClick(callback)` - 左键单击回调
-- `OnDoubleClick(callback)` - 双击回调
+- `SimpleToast`, `NewToastBuilder`, `NewAdvancedToastBuilder`
+- `NotifySuccess`, `NotifyWarning`, `NotifyError`, `NotifyProgress`
+- `TwoTextInputDialog`, `UsernamePasswordDialog`
 
-### 对话框
+### 控制台与消息框
 
-- `TwoTextInputDialog()` - 标准双文本输入对话框
-- `UsernamePasswordDialog()` - 用户名密码登录对话框（密码字段星号遮蔽）
+- `GetConsoleWindow`, `ShowConsole`, `HideConsole`, `ToggleConsole`
+- `IsConsoleVisible`, `GetConsoleTitle`, `SetConsoleTitle`, `ShowWindow`
+- `MessageBoxW`, `RunningByDoubleClick`
+
+### 剪贴板
+
+- `SetText`, `SetClipboardText`, `GetClipboardDataText`
+- `OpenClipboard`, `CloseClipboard`, `EmptyClipboard`
+
+## 文档与示例
+
+- API 文档：[`docs/API.md`](docs/API.md)
+- 控制台指南：[`docs/console_guide.md`](docs/console_guide.md)
+- 示例集合：[`docs/EXAMPLES.md`](docs/EXAMPLES.md)
+- 演示入口：[`cmd/main.go`](cmd/main.go)
+- 示例代码：[`examples/console/console_demo.go`](examples/console/console_demo.go)、[`examples/autoclose/autoclose_demo.go`](examples/autoclose/autoclose_demo.go)
+
+## 项目结构
+
+```text
+.
+├── cmd/                    # 演示入口
+├── docs/                   # 使用文档与示例说明
+├── examples/               # 示例代码
+├── trayapp.go              # 高级托盘应用封装
+├── trayicon.go             # 托盘图标与菜单处理
+├── notification.go         # Toast 通知相关
+├── dialog.go               # 输入对话框
+├── messagebox.go           # Win32 MessageBox + DPI 辅助
+├── clipboard.go            # 剪贴板封装
+├── console.go              # 控制台窗口管理
+├── window.go               # 窗口与消息循环基础能力
+└── *_test.go               # 测试
+```
 
 ## 系统要求
 
-- Windows 7 或更高版本
-- Go 1.21 或更高版本
-- 用于 Toast 通知的 PowerShell
+- Windows（`//go:build windows`）
+- Go 1.21+
+- PowerShell（用于 Toast 通知）
 
-## 示例
+## 测试
 
-### 控制台管理示例
-
-``go
-package main
-
-import (
-    "fmt"
-    "log"
-    "time"
-    
-    "repo.smlk.org/win32utils"
-)
-
-func main() {
-    // 演示控制台管理功能
-    
-    // 获取当前状态
-    visible, err := win32utils.IsConsoleVisible()
-    if err != nil {
-        log.Fatal(err)
-    }
-    fmt.Printf("Console initially %s\n", map[bool]string{true: "visible", false: "hidden"}[visible])
-    
-    // 隐藏控制台
-    fmt.Println("Hiding console in 2 seconds...")
-    time.Sleep(2 * time.Second)
-    err = win32utils.HideConsole()
-    if err != nil {
-        log.Printf("Error hiding console: %v", err)
-    }
-    
-    // 等待3秒
-    time.Sleep(3 * time.Second)
-    
-    // 显示控制台
-    fmt.Println("Showing console...")
-    err = win32utils.ShowConsole()
-    if err != nil {
-        log.Printf("Error showing console: %v", err)
-    }
-    
-    // 修改控制台标题
-    err = win32utils.SetConsoleTitle("Demo Application Console")
-    if err != nil {
-        log.Printf("Error setting console title: %v", err)
-    }
-    
-    fmt.Println("Console management demo completed!")
-}
+```bash
+go test ./...
 ```
-
-### 基本托盘应用
-
-查看 [cmd/main.go](cmd/main.go) 获取完整的示例应用程序。
-
-### 特性演示
-
-示例应用程序展示了以下特性：
-- 创建系统托盘图标
-- 右键菜单
-- 带 Emoji 的菜单项
-- Toast 通知（成功、警告、错误、信息）
-- 文本输入对话框
-- 用户名密码登录对话框
-- 事件处理回调
-
-## 线程安全
-
-`TrayApp` 是线程安全的。从任何线程调用 `AddMenuItem`, `ShowNotification*` 和 `ShowDialog` 方法是安全的。
-
-## 常见问题
-
-**Q: 可以从其他线程显示通知吗？**
-
-A: 是的，所有通知方法都是线程安全的。
-
-**Q: 如何自定义菜单项的图标？**
-
-A: 使用 `AddMenuItemWithEmoji()` 方法并传递您选择的 Emoji。
-
-**Q: Toast 通知在哪里显示？**
-
-A: Toast 通知显示在 Windows 10/11 的通知中心。需要 PowerShell 支持。
-
-**Q: 可以在应用运行时添加菜单项吗？**
-
-A: 是的，可以在任何时刻调用 `AddMenuItem`。菜单将在下次右键单击时更新。
-
-**Q: 控制台管理功能有什么限制吗？**
-
-A: 控制台管理功能仅在应用程序有控制台窗口时有效。如果应用程序是GUI应用且没有关联的控制台，则这些函数可能会返回错误。
-
-**Q: UsernamePasswordDialog的安全性如何？**
-
-A: 密码字段使用Windows标准的ES_PASSWORD样式，输入时显示星号。但在内存中密码仍以明文形式存储，请确保在使用后正确清理敏感数据。
 
 ## 许可证
 
-查看 [LICENSE](LICENSE) 文件了解详情。
+查看 [`LICENSE`](LICENSE)。
 
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request。
-
----
-
-**下一步**: 阅读 [API 文档](docs/API.md) 了解详细的 API 参考。
