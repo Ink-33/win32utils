@@ -56,7 +56,7 @@ func SetClipboardText(text string) (handle windows.Handle, err error) {
 
 	dst := unsafe.Slice((*uint16)(unsafe.Pointer(p)), len(u16text))
 	copy(dst, u16text)
-	
+
 	err = GlobalUnlock(h)
 	if err != nil {
 		return 0, err

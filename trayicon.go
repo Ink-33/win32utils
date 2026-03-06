@@ -13,10 +13,10 @@ type MenuItemCallback func(itemID int32)
 
 // PopupMenu manages a context menu for the tray icon.
 type PopupMenu struct {
-	mu      sync.Mutex
-	hMenu   windows.Handle
-	items   map[int32]MenuItemCallback
-	nextID  int32
+	mu     sync.Mutex
+	hMenu  windows.Handle
+	items  map[int32]MenuItemCallback
+	nextID int32
 }
 
 // NewPopupMenu creates a new popup menu.
@@ -223,21 +223,30 @@ func defaultTrayWndProc(hwnd windows.HWND, msg uint32, wParam, lParam uintptr, t
 	case ti.msgID:
 		if ti.callback != nil {
 			mouseMsg := uint32(lParam)
-			ti.callback(mouseMsg)
 
-			// Show popup menu on right-click
+			// Handle right-click to show popup menu
 			if mouseMsg == WM_RBUTTONDOWN && ti.menu != nil {
 				// Get cursor position
 				pt := POINT{}
 				r1, _, _ := User32.NewProc("GetCursorPos").Call(uintptr(unsafe.Pointer(&pt)))
 				if r1 != 0 {
+					// SetForegroundWindow is required for menu to work properly
+					SetForegroundWindow(hwnd)
 					selectedID, _ := ti.menu.Show(hwnd, pt.X, pt.Y)
 					if selectedID != 0 {
 						if callback, ok := ti.menu.GetCallback(selectedID); ok && callback != nil {
+							// Execute callback synchronously on main thread
+							// Windows UI operations (dialogs, etc.) must run on the thread that created them
 							callback(selectedID)
 						}
 					}
+					// Required for proper menu dismissal
+					PostMessageW(hwnd, WM_NULL, 0, 0)
 				}
+			} else {
+				// For other mouse events (left click, double click), call callback synchronously
+				// If user needs async behavior, they should use goroutine in their callback
+				ti.callback(mouseMsg)
 			}
 		}
 		return 0
@@ -247,6 +256,7 @@ func defaultTrayWndProc(hwnd windows.HWND, msg uint32, wParam, lParam uintptr, t
 		cmd := int32(wParam & 0xFFFF)
 		if ti.menu != nil {
 			if callback, ok := ti.menu.GetCallback(cmd); ok && callback != nil {
+				// Execute callback synchronously on main thread
 				callback(cmd)
 			}
 		}

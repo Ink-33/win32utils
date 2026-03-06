@@ -46,7 +46,7 @@ func TestBasicClipboardWorkflow(t *testing.T) {
 // TestSetTextFunction tests the convenience SetText function
 func TestSetTextFunction(t *testing.T) {
 	testText := "Convenience function test - " + time.Now().Format("15:04:05")
-	
+
 	err := SetText(testText)
 	if err != nil {
 		t.Skipf("Skipping test - SetText failed: %v", err)
@@ -121,7 +121,7 @@ func TestEmptyClipboardFunction(t *testing.T) {
 func TestUnicodeTextHandling(t *testing.T) {
 	// Test with simple Unicode text
 	unicodeText := "Unicode: αβγ 中文 🚀"
-	
+
 	err := OpenClipboard(windows.HWND(GetConsoleWindows()))
 	if err != nil {
 		t.Skipf("Skipping test - failed to open clipboard: %v", err)
@@ -150,7 +150,7 @@ func TestUnicodeTextHandling(t *testing.T) {
 func TestModerateLengthText(t *testing.T) {
 	// Create a moderate length text (~200 characters)
 	moderateText := strings.Repeat("Moderate length text test. ", 8)
-	
+
 	err := OpenClipboard(windows.HWND(GetConsoleWindows()))
 	if err != nil {
 		t.Skipf("Skipping test - failed to open clipboard: %v", err)
@@ -172,7 +172,7 @@ func TestModerateLengthText(t *testing.T) {
 		t.Error("Expected non-zero handle for moderate length text")
 	}
 
-	t.Logf("Successfully handled moderate length text (%d chars) with handle: %v", 
+	t.Logf("Successfully handled moderate length text (%d chars) with handle: %v",
 		len(moderateText), handle)
 }
 
@@ -183,7 +183,7 @@ func TestSequentialOperations(t *testing.T) {
 		text string
 	}{
 		{"First", "First sequential operation"},
-		{"Second", "Second sequential operation"}, 
+		{"Second", "Second sequential operation"},
 		{"Third", "Third sequential operation"},
 		{"Fourth", "Fourth sequential operation"},
 	}
@@ -195,7 +195,7 @@ func TestSequentialOperations(t *testing.T) {
 				t.Skipf("Skipping operation - failed to open clipboard: %v", err)
 				return
 			}
-			
+
 			err = EmptyClipboard()
 			if err != nil {
 				CloseClipboard()
@@ -223,7 +223,7 @@ func TestSequentialOperations(t *testing.T) {
 func TestConcurrentAccessPatterns(t *testing.T) {
 	// Test that sequential operations work reliably
 	results := make(chan string, 3)
-	
+
 	// Operation 1
 	go func() {
 		err := OpenClipboard(windows.HWND(GetConsoleWindows()))
@@ -232,71 +232,71 @@ func TestConcurrentAccessPatterns(t *testing.T) {
 			return
 		}
 		defer CloseClipboard()
-		
+
 		err = EmptyClipboard()
 		if err != nil {
 			results <- "op1_failed_empty"
 			return
 		}
-		
+
 		_, err = SetClipboardText("Concurrent Op 1")
 		if err != nil {
 			results <- "op1_failed_set"
 			return
 		}
-		
+
 		results <- "op1_success"
 	}()
 
 	// Operation 2 (with delay to ensure serialization)
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		
+
 		err := OpenClipboard(windows.HWND(GetConsoleWindows()))
 		if err != nil {
 			results <- "op2_failed_open"
 			return
 		}
 		defer CloseClipboard()
-		
+
 		err = EmptyClipboard()
 		if err != nil {
 			results <- "op2_failed_empty"
 			return
 		}
-		
+
 		_, err = SetClipboardText("Concurrent Op 2")
 		if err != nil {
 			results <- "op2_failed_set"
 			return
 		}
-		
+
 		results <- "op2_success"
 	}()
 
 	// Operation 3 (with longer delay)
 	go func() {
 		time.Sleep(200 * time.Millisecond)
-		
+
 		err := OpenClipboard(windows.HWND(GetConsoleWindows()))
 		if err != nil {
 			results <- "op3_failed_open"
 			return
 		}
 		defer CloseClipboard()
-		
+
 		err = EmptyClipboard()
 		if err != nil {
 			results <- "op3_failed_empty"
 			return
 		}
-		
+
 		_, err = SetClipboardText("Concurrent Op 3")
 		if err != nil {
 			results <- "op3_failed_set"
 			return
 		}
-		
+
 		results <- "op3_success"
 	}()
 
@@ -304,7 +304,7 @@ func TestConcurrentAccessPatterns(t *testing.T) {
 	timeout := time.After(15 * time.Second)
 	successCount := 0
 	totalOps := 3
-	
+
 	for successCount < totalOps {
 		select {
 		case result := <-results:
@@ -319,7 +319,7 @@ func TestConcurrentAccessPatterns(t *testing.T) {
 			return
 		}
 	}
-	
+
 	t.Logf("All %d concurrent operations completed", successCount)
 }
 
@@ -327,14 +327,14 @@ func TestConcurrentAccessPatterns(t *testing.T) {
 func TestPlatformSpecificBehavior(t *testing.T) {
 	// Document various behaviors we might encounter
 	t.Log("Testing platform-specific clipboard behaviors...")
-	
+
 	// Test 1: Multiple opens might succeed on some systems
 	err := OpenClipboard(windows.HWND(GetConsoleWindows()))
 	if err != nil {
 		t.Skipf("Cannot test platform behavior - failed to open clipboard: %v", err)
 		return
 	}
-	
+
 	// Try to open again
 	err2 := OpenClipboard(windows.HWND(GetConsoleWindows()))
 	if err2 != nil {
@@ -343,9 +343,9 @@ func TestPlatformSpecificBehavior(t *testing.T) {
 		t.Log("ℹ Second OpenClipboard succeeded (platform-dependent behavior)")
 		CloseClipboard() // Clean up
 	}
-	
+
 	CloseClipboard()
-	
+
 	// Test 2: Operations without explicit open might work
 	err = EmptyClipboard()
 	if err != nil {
@@ -353,7 +353,7 @@ func TestPlatformSpecificBehavior(t *testing.T) {
 	} else {
 		t.Log("ℹ EmptyClipboard without open succeeded (platform-dependent)")
 	}
-	
+
 	// Test 3: Check if we can read clipboard state
 	err = OpenClipboard(windows.HWND(GetConsoleWindows()))
 	if err == nil {
@@ -373,9 +373,9 @@ func BenchmarkClipboardSetText(b *testing.B) {
 		return
 	}
 	defer CloseClipboard()
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, err := SetClipboardText("Benchmark test text")
 		if err != nil {
@@ -391,9 +391,9 @@ func BenchmarkClipboardSetTextUnicode(b *testing.B) {
 		return
 	}
 	defer CloseClipboard()
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, err := SetClipboardText("Unicode benchmark: 中文 🚀 αβγ")
 		if err != nil {
@@ -404,28 +404,28 @@ func BenchmarkClipboardSetTextUnicode(b *testing.B) {
 
 func BenchmarkSequentialOperations(b *testing.B) {
 	testText := "Sequential benchmark text"
-	
+
 	b.ResetTimer()
-	
+
 	for i := 0; i < b.N; i++ {
 		// Complete clipboard cycle
 		err := OpenClipboard(windows.HWND(GetConsoleWindows()))
 		if err != nil {
 			b.Fatalf("Failed to open clipboard: %v", err)
 		}
-		
+
 		err = EmptyClipboard()
 		if err != nil {
 			CloseClipboard()
 			b.Fatalf("Failed to empty clipboard: %v", err)
 		}
-		
+
 		_, err = SetClipboardText(testText)
 		if err != nil {
 			CloseClipboard()
 			b.Fatalf("Failed to set text: %v", err)
 		}
-		
+
 		CloseClipboard()
 	}
 }

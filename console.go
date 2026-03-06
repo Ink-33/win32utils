@@ -69,7 +69,7 @@ func IsConsoleVisible() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	// Check if window is visible using IsWindowVisible
 	r1, _, _ := User32.NewProc("IsWindowVisible").Call(uintptr(hwnd))
 	return r1 != 0, nil
@@ -82,11 +82,11 @@ func ToggleConsole() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	
+
 	// Check current visibility
 	r1, _, _ := User32.NewProc("IsWindowVisible").Call(uintptr(hwnd))
 	isVisible := r1 != 0
-	
+
 	// Toggle the state
 	var cmdShow int32
 	if isVisible {
@@ -94,12 +94,12 @@ func ToggleConsole() (bool, error) {
 	} else {
 		cmdShow = SW_SHOW
 	}
-	
+
 	err = ShowWindow(hwnd, cmdShow)
 	if err != nil {
 		return !isVisible, err
 	}
-	
+
 	return !isVisible, nil
 }
 
@@ -108,16 +108,16 @@ func GetConsoleTitle() (string, error) {
 	// Buffer size - Windows console titles are typically limited
 	const bufferSize = 1024
 	buffer := make([]uint16, bufferSize)
-	
+
 	r1, _, _ := Kernel32.NewProc("GetConsoleTitleW").Call(
 		uintptr(unsafe.Pointer(&buffer[0])),
 		uintptr(bufferSize),
 	)
-	
+
 	if r1 == 0 {
 		return "", windows.GetLastError()
 	}
-	
+
 	return windows.UTF16ToString(buffer[:r1]), nil
 }
 
@@ -127,11 +127,11 @@ func SetConsoleTitle(title string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	r1, _, _ := Kernel32.NewProc("SetConsoleTitleW").Call(uintptr(unsafe.Pointer(titlePtr)))
 	if r1 == 0 {
 		return windows.GetLastError()
 	}
-	
+
 	return nil
 }

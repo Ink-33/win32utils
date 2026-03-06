@@ -14,6 +14,7 @@ import (
 const HWND_MESSAGE windows.HWND = windows.HWND(^uintptr(2))
 
 const (
+	WM_NULL          uint32 = 0x0000
 	WM_DESTROY       uint32 = 0x0002
 	WM_NCDESTROY     uint32 = 0x0082
 	WM_CLOSE         uint32 = 0x0010
@@ -25,7 +26,6 @@ const (
 	WM_LBUTTONDOWN   uint32 = 0x0201
 	WM_RBUTTONDOWN   uint32 = 0x0204
 	WM_LBUTTONDBLCLK uint32 = 0x0203
-
 )
 
 // WndProc is the window procedure callback.
